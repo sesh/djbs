@@ -170,6 +170,40 @@ DATABASES = {
         f.write(settings)
 
 
+def django_add_authuser(dir, project_name):
+    django_authuser_zip = BytesIO(request("https://github.com/sesh/django-authuser/archive/refs/heads/main.zip").content)
+
+    z = ZipFile(django_authuser_zip)
+    z.extractall(dir)
+    Path(dir / "django-authuser-main").replace(dir / "authuser")
+
+    django_add_app_to_installed_apps(dir, project_name, "authuser")
+
+    settings = open(dir / project_name / "settings.py", "r").read()
+    settings += "\n\n# Custom user model\n\nAUTH_USER_MODEL = \"authuser.User\"\nAUTH_USER_ALLOW_SIGNUP = True\n"
+
+    with open(dir / project_name / "settings.py", "w") as f:
+        f.write(settings)
+
+    urls = open(dir / project_name / "urls.py", "r").read()
+    urls = urls.replace("]", "    path('accounts/', include('authuser.urls')),\n]")
+    urls = urls.replace("from django.urls import path", "from django.urls import include, path")
+
+    with open(dir / project_name / "urls.py", "w") as f:
+        f.write(urls)
+
+
+def django_set_staticfiles_storage(dir, project_name):
+    settings = open(dir / project_name / "settings.py", "r").read().splitlines()
+
+    for i, l in enumerate(settings):
+        if l.startswith("STATIC_URL ="):
+            l += '\nif not DEBUG:\n    STATICFILES_STORAGE = "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"'
+            settings[i] = l
+
+    with open(dir / project_name / "settings.py", "w") as f:
+        f.write("\n".join(settings))
+
 def django_add_middleware(dir, project_name):
     middleware = request("https://raw.githubusercontent.com/sesh/django-middleware/main/middleware.py").content.decode()
     with open(dir / project_name / "middleware.py", "w") as f:
@@ -272,6 +306,7 @@ def main(project_name, app_name, domain):
     django_startproject(p, project_name)
     django_secret_key_in_env(p, project_name)
     django_set_allowed_hosts(p, project_name, domain)
+    django_set_staticfiles_storage(p, project_name)
     django_startapp(p, app_name)
     django_add_app_to_installed_apps(p, project_name, app_name)
     django_add_base_template(p, project_name, app_name)
@@ -279,6 +314,7 @@ def main(project_name, app_name, domain):
     django_add_management_command(p, project_name, app_name)
     django_add_favicon(p, project_name, app_name)
     django_add_up(p, project_name)
+    django_add_authuser(p, project_name)
     django_add_middleware(p, project_name)
     django_run_migrations(p, project_name)
 
@@ -291,4 +327,4 @@ def main(project_name, app_name, domain):
 
 
 if __name__ == "__main__":
-    main("webdevctf", "flags", "webdevctf.com")
+    main("testapp", "tester", "test.brntn.me")
