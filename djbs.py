@@ -8,6 +8,9 @@ from zipfile import ZipFile
 from args import parse_args
 from thttp import request
 
+from textwrap import dedent
+
+
 EXAMPLE_MANAGEMENT_COMMAND = """# Example management command
 # https://docs.djangoproject.com/en/4.0/howto/custom-management-commands/
 
@@ -88,7 +91,7 @@ def django_run_migrations(dir, app_name):
 
 def django_add_app_to_installed_apps(dir, project_name, app):
     settings = open(dir / project_name / "settings.py", "r").read()
-    settings = settings.replace("'django.contrib.staticfiles',", f"'django.contrib.staticfiles',\n    '{app}',")
+    settings = settings.replace('\"django.contrib.staticfiles\",', f'\"django.contrib.staticfiles\",\n    \"{app}\",')
 
     with open(dir / project_name / "settings.py", "w") as f:
         f.write(settings)
@@ -163,7 +166,7 @@ DATABASES = {
     settings += "\n\n"
     settings += "# Django Up\n"
     settings += "# https://github.com/sesh/django-up\n\n"
-    settings += f"GUNICORN_PORT = {random.randint(11000, 20000)}\n"
+    settings += f"UP_GUNICORN_PORT = {random.randint(11000, 20000)}\n"
     settings += "SECURE_PROXY_SSL_HEADER = ('HTTP_X_SCHEME', 'https')\n"
 
     with open(dir / project_name / "settings.py", "w") as f:
@@ -192,6 +195,37 @@ def django_add_authuser(dir, project_name):
     with open(dir / project_name / "urls.py", "w") as f:
         f.write(urls)
 
+
+def django_add_wellknown_urls(dir, project_name):
+    urls = open(dir / project_name / "urls.py", "r").read()
+    urlpatterns = """
+def robots(request):
+    return HttpResponse(
+        "User-Agent: *", headers={"Content-Type": "text/plain; charset=UTF-8"}
+    )
+
+
+def security(request):
+    return HttpResponse(
+        "Contact: security@brntn.me\\nExpires: 2025-01-01T00:00:00.000Z",
+        headers={"Content-Type": "text/plain; charset=UTF-8"},
+    )
+
+
+def trigger_error(request):
+    division_by_zero = 1 / 0
+
+
+urlpatterns = [
+    # .well-known
+    path("robots.txt", robots),
+    path(".well-known/security.txt", security),
+    path(".well-known/500", trigger_error),
+"""
+
+    urls = urls.replace("urlpatterns = [", urlpatterns)
+    with open(dir / project_name / "urls.py", "w") as f:
+        f.write(urls)
 
 def django_set_staticfiles_storage(dir, project_name):
     settings = open(dir / project_name / "settings.py", "r").read().splitlines()
@@ -226,6 +260,33 @@ def django_add_middleware(dir, project_name):
     with open(dir / project_name / "settings.py", "w") as f:
         f.write(settings)
 
+
+def django_add_sentry(dir, project_name):
+    settings = open(dir / project_name / "settings.py", "r").read()
+    settings += "\n\n"
+    settings += "# Sentry\n"
+    settings += "# https://sentry.io\n"
+    settings += "# Enabled by setting SENTRY_DSN, install sentry_sdk if you plan on using Sentry\n\n"
+    settings += 'SENTRY_DSN = os.environ.get("SENTRY_DSN", "")\n\n'
+    settings += 'if SENTRY_DSN:\n'
+    settings += '    import sentry_sdk\n'
+    settings += '    from sentry_sdk.integrations.django import DjangoIntegration\n'
+    settings += '    sentry_sdk.init(\n'
+    settings += '        dsn=SENTRY_DSN,\n'
+    settings += '        integrations=[\n'
+    settings += '            DjangoIntegration(),\n'
+    settings += '        ],\n'
+    settings += '        # Set traces_sample_rate to 1.0 to capture 100%\n'
+    settings += '        # of transactions for performance monitoring.\n'
+    settings += '        # We recommend adjusting this value in production.\n'
+    settings += '        traces_sample_rate=1.0,\n'
+    settings += '        # If you wish to associate users to errors (assuming you are using\n'
+    settings += '        # django.contrib.auth) you may enable sending PII data.\n'
+    settings += '        send_default_pii=False\n'
+    settings += '    )\n'
+
+    with open(dir / project_name / "settings.py", "w") as f:
+        f.write(settings)
 
 def install_and_run_black(dir):
     run("pipenv install --dev black", shell=True, check=True, cwd=dir)
@@ -298,8 +359,8 @@ def add_gitignore(dir):
         f.write(gitignore)
 
 
-def main(project_name, app_name, domain):
-    p = Path(project_name)
+def main(project_name, app_name, domain, base_dir):
+    p = Path(base_dir + project_name)
     p = create_project_directory(p)
 
     django_install(p)
@@ -315,9 +376,10 @@ def main(project_name, app_name, domain):
     django_add_favicon(p, project_name, app_name)
     django_add_up(p, project_name)
     django_add_authuser(p, project_name)
+    django_add_wellknown_urls(p, project_name)
+    django_add_sentry(p, project_name)
     django_add_middleware(p, project_name)
     django_run_migrations(p, project_name)
-
     add_readme(p, project_name, domain)
     add_pyproject(p)
     add_gitignore(p)
@@ -327,4 +389,15 @@ def main(project_name, app_name, domain):
 
 
 if __name__ == "__main__":
-    main("testapp", "tester", "test.brntn.me")
+    project_name = input("Project name: ")
+    domain_name = input("Domain name: ")
+
+    app_name = input("App name [core]:")
+    if not app_name:
+        app_name = "core"
+
+    base_dir = input("Base directory [../]: ")
+    if not base_dir:
+        base_dir = "../"
+
+    main(project_name, app_name, domain_name, base_dir)
