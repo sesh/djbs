@@ -196,6 +196,36 @@ def django_add_authuser(dir, project_name):
         f.write(urls)
 
 
+def django_add_default_logging(dir, project_name):
+    settings = open(dir / project_name / "settings.py", "r").read()
+
+    settings += "\n\n"
+    settings += '# Logging Configuration\n'
+    settings += 'if DEBUG == False:\n'
+    settings += '    LOGGING = {\n'
+    settings += '        "version": 1,\n'
+    settings += '        "disable_existing_loggers": False,\n'
+    settings += '        "handlers": {\n'
+    settings += '            "file": {\n'
+    settings += '                "level": "DEBUG",\n'
+    settings += '                "class": "logging.FileHandler",\n'
+    settings += f'                "filename": "/srv/www/{project_name}/logs/debug.log",\n'
+    settings += '            },\n'
+    settings += '        },\n'
+    settings += '        "loggers": {\n'
+    settings += '            "django": {\n'
+    settings += '                "handlers": ["file"],\n'
+    settings += '                "level": "DEBUG",\n'
+    settings += '                "propagate": True,\n'
+    settings += '            },\n'
+    settings += '        },\n'
+    settings += '    }\n'
+
+
+    with open(dir / project_name / "settings.py", "w") as f:
+        f.write(settings)
+
+
 def django_add_wellknown_urls(dir, project_name):
     urls = open(dir / project_name / "urls.py", "r").read()
     urlpatterns = """
@@ -268,7 +298,7 @@ def django_add_sentry(dir, project_name):
     settings += "# https://sentry.io\n"
     settings += "# Enabled by setting SENTRY_DSN, install sentry_sdk if you plan on using Sentry\n\n"
     settings += 'SENTRY_DSN = os.environ.get("SENTRY_DSN", "")\n\n'
-    settings += 'if SENTRY_DSN:\n'
+    settings += 'if SENTRY_DSN and not DEBUG:\n'
     settings += '    import sentry_sdk\n'
     settings += '    from sentry_sdk.integrations.django import DjangoIntegration\n'
     settings += '    sentry_sdk.init(\n'
@@ -368,6 +398,7 @@ def main(project_name, app_name, domain, base_dir):
     django_secret_key_in_env(p, project_name)
     django_set_allowed_hosts(p, project_name, domain)
     django_set_staticfiles_storage(p, project_name)
+    django_add_default_logging(p, project_name)
     django_startapp(p, app_name)
     django_add_app_to_installed_apps(p, project_name, app_name)
     django_add_base_template(p, project_name, app_name)
