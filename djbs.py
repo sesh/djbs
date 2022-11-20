@@ -239,7 +239,7 @@ def robots(request):
 
 def security(request):
     return HttpResponse(
-        "Contact: security@brntn.me\\nExpires: 2025-01-01T00:00:00.000Z",
+        "Contact: <your-email>\\nExpires: 2025-01-01T00:00:00.000Z",
         headers={"Content-Type": "text/plain; charset=UTF-8"},
     )
 
