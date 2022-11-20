@@ -1,5 +1,6 @@
 import random
 import secrets
+import sys
 from io import BytesIO
 from pathlib import Path
 from subprocess import run
@@ -91,7 +92,7 @@ def django_run_migrations(dir, app_name):
 
 def django_add_app_to_installed_apps(dir, project_name, app):
     settings = open(dir / project_name / "settings.py", "r").read()
-    settings = settings.replace('\"django.contrib.staticfiles\",', f'\"django.contrib.staticfiles\",\n    \"{app}\",')
+    settings = settings.replace('"django.contrib.staticfiles",', f'"django.contrib.staticfiles",\n    "{app}",')
 
     with open(dir / project_name / "settings.py", "w") as f:
         f.write(settings)
@@ -174,7 +175,9 @@ DATABASES = {
 
 
 def django_add_authuser(dir, project_name):
-    django_authuser_zip = BytesIO(request("https://github.com/sesh/django-authuser/archive/refs/heads/main.zip").content)
+    django_authuser_zip = BytesIO(
+        request("https://github.com/sesh/django-authuser/archive/refs/heads/main.zip").content
+    )
 
     z = ZipFile(django_authuser_zip)
     z.extractall(dir)
@@ -183,7 +186,7 @@ def django_add_authuser(dir, project_name):
     django_add_app_to_installed_apps(dir, project_name, "authuser")
 
     settings = open(dir / project_name / "settings.py", "r").read()
-    settings += "\n\n# Custom user model\n\nAUTH_USER_MODEL = \"authuser.User\"\nAUTH_USER_ALLOW_SIGNUP = True\n"
+    settings += '\n\n# Custom user model\n\nAUTH_USER_MODEL = "authuser.User"\nAUTH_USER_ALLOW_SIGNUP = True\n'
 
     with open(dir / project_name / "settings.py", "w") as f:
         f.write(settings)
@@ -200,9 +203,9 @@ def django_add_default_logging(dir, project_name):
     settings = open(dir / project_name / "settings.py", "r").read()
 
     settings += "\n\n"
-    settings += '# Logging Configuration\n'
-    settings += 'if DEBUG == False:\n'
-    settings += '    LOGGING = {\n'
+    settings += "# Logging Configuration\n"
+    settings += "if DEBUG == False:\n"
+    settings += "    LOGGING = {\n"
     settings += '        "version": 1,\n'
     settings += '        "disable_existing_loggers": False,\n'
     settings += '        "handlers": {\n'
@@ -210,17 +213,16 @@ def django_add_default_logging(dir, project_name):
     settings += '                "level": "DEBUG",\n'
     settings += '                "class": "logging.FileHandler",\n'
     settings += f'                "filename": "/srv/www/{project_name}/logs/debug.log",\n'
-    settings += '            },\n'
-    settings += '        },\n'
+    settings += "            },\n"
+    settings += "        },\n"
     settings += '        "loggers": {\n'
     settings += '            "django": {\n'
     settings += '                "handlers": ["file"],\n'
     settings += '                "level": "DEBUG",\n'
     settings += '                "propagate": True,\n'
-    settings += '            },\n'
-    settings += '        },\n'
-    settings += '    }\n'
-
+    settings += "            },\n"
+    settings += "        },\n"
+    settings += "    }\n"
 
     with open(dir / project_name / "settings.py", "w") as f:
         f.write(settings)
@@ -257,6 +259,7 @@ urlpatterns = [
     with open(dir / project_name / "urls.py", "w") as f:
         f.write(urls)
 
+
 def django_set_staticfiles_storage(dir, project_name):
     settings = open(dir / project_name / "settings.py", "r").read().splitlines()
 
@@ -267,6 +270,7 @@ def django_set_staticfiles_storage(dir, project_name):
 
     with open(dir / project_name / "settings.py", "w") as f:
         f.write("\n".join(settings))
+
 
 def django_add_middleware(dir, project_name):
     middleware = request("https://raw.githubusercontent.com/sesh/django-middleware/main/middleware.py").content.decode()
@@ -298,25 +302,26 @@ def django_add_sentry(dir, project_name):
     settings += "# https://sentry.io\n"
     settings += "# Enabled by setting SENTRY_DSN, install sentry_sdk if you plan on using Sentry\n\n"
     settings += 'SENTRY_DSN = os.environ.get("SENTRY_DSN", "")\n\n'
-    settings += 'if SENTRY_DSN and not DEBUG:\n'
-    settings += '    import sentry_sdk\n'
-    settings += '    from sentry_sdk.integrations.django import DjangoIntegration\n'
-    settings += '    sentry_sdk.init(\n'
-    settings += '        dsn=SENTRY_DSN,\n'
-    settings += '        integrations=[\n'
-    settings += '            DjangoIntegration(),\n'
-    settings += '        ],\n'
-    settings += '        # Set traces_sample_rate to 1.0 to capture 100%\n'
-    settings += '        # of transactions for performance monitoring.\n'
-    settings += '        # We recommend adjusting this value in production.\n'
-    settings += '        traces_sample_rate=1.0,\n'
-    settings += '        # If you wish to associate users to errors (assuming you are using\n'
-    settings += '        # django.contrib.auth) you may enable sending PII data.\n'
-    settings += '        send_default_pii=False\n'
-    settings += '    )\n'
+    settings += "if SENTRY_DSN and not DEBUG:\n"
+    settings += "    import sentry_sdk\n"
+    settings += "    from sentry_sdk.integrations.django import DjangoIntegration\n"
+    settings += "    sentry_sdk.init(\n"
+    settings += "        dsn=SENTRY_DSN,\n"
+    settings += "        integrations=[\n"
+    settings += "            DjangoIntegration(),\n"
+    settings += "        ],\n"
+    settings += "        # Set traces_sample_rate to 1.0 to capture 100%\n"
+    settings += "        # of transactions for performance monitoring.\n"
+    settings += "        # We recommend adjusting this value in production.\n"
+    settings += "        traces_sample_rate=1.0,\n"
+    settings += "        # If you wish to associate users to errors (assuming you are using\n"
+    settings += "        # django.contrib.auth) you may enable sending PII data.\n"
+    settings += "        send_default_pii=False\n"
+    settings += "    )\n"
 
     with open(dir / project_name / "settings.py", "w") as f:
         f.write(settings)
+
 
 def install_and_run_black(dir):
     run("pipenv install --dev black", shell=True, check=True, cwd=dir)
@@ -373,7 +378,7 @@ Notes:
 - Target should be running Debian 11
 
 ```bash
-pipenv run python manage.py up {domain}
+pipenv run python manage.py up {domain} --email=<your-email>
 ```
 
 ---
@@ -430,5 +435,10 @@ if __name__ == "__main__":
     base_dir = input("Base directory [../]: ")
     if not base_dir:
         base_dir = "../"
+
+    if not base_dir.endswith("/"):
+        cont = input("Base directory does not end with '/', continue (yN)? ")
+        if cont != "y":
+            sys.exit("Exiting..")
 
     main(project_name, app_name, domain_name, base_dir)
