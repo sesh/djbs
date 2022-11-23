@@ -313,7 +313,7 @@ def django_add_sentry(dir, project_name):
     settings += "        # Set traces_sample_rate to 1.0 to capture 100%\n"
     settings += "        # of transactions for performance monitoring.\n"
     settings += "        # We recommend adjusting this value in production.\n"
-    settings += "        traces_sample_rate=1.0,\n"
+    settings += "        traces_sample_rate=0.05,\n"
     settings += "        # If you wish to associate users to errors (assuming you are using\n"
     settings += "        # django.contrib.auth) you may enable sending PII data.\n"
     settings += "        send_default_pii=False\n"
