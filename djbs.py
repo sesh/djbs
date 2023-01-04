@@ -375,7 +375,7 @@ pipenv run python manage.py test
 Notes:
 
 - Ansible must be installed on your local machine
-- Target should be running Debian 11
+- Target should be running Ubuntu 22.04
 
 ```bash
 pipenv run python manage.py up {domain} --email=<your-email>
