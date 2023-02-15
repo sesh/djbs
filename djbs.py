@@ -230,7 +230,8 @@ def django_add_default_logging(dir, project_name):
 
 def django_add_wellknown_urls(dir, project_name):
     urls = open(dir / project_name / "urls.py", "r").read()
-    urlpatterns = """
+    urlpatterns = """from django.http import HttpResponse
+
 def robots(request):
     return HttpResponse(
         "User-Agent: *", headers={"Content-Type": "text/plain; charset=UTF-8"}
@@ -336,11 +337,14 @@ def install_and_run_isort(dir):
 def add_pyproject(dir):
     with open(dir / "pyproject.toml", "w") as f:
         f.write(
-            """[tool.black]
+            """[tool.ruff]
+line-length = 120
+
+[tool.black]
 line-length = 120
 
 [tool.isort]
-line_length=120
+profile = "black"
 """
         )
 
