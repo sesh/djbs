@@ -280,7 +280,7 @@ def django_add_middleware(dir, project_name):
 
     settings = open(dir / project_name / "settings.py", "r").read()
     settings = settings.replace(
-        "'django.middleware.clickjacking.XFrameOptionsMiddleware',",
+        '"django.middleware.clickjacking.XFrameOptionsMiddleware",',
         f"""'django.middleware.clickjacking.XFrameOptionsMiddleware',
     '{project_name}.middleware.set_remote_addr',
     '{project_name}.middleware.csp',
